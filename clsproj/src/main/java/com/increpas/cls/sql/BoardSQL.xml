@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper
+		PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+				"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+				
+<mapper namespace="bSQL">
+<select id="getList">
+		SELECT
+			rno, bno, title, oriname, bdate, click
+		FROM
+			( 
+			SELECT 
+                ROWNUM rno, bno, title, oriname, bdate, click 
+			FROM
+                (
+                SELECT
+                    bno, title, oriname, b.bdate, click
+                FROM 
+                    board b, member m
+                WHERE 
+                	bno = mno
+                    AND board.isshow = 'Y' 
+                ORDER BY 
+                    bdate DESC )brd
+                    
+                )
+                WHERE
+                	rno BETWEEN #{startCount} AND #{endCount}
+</select>
+	<sql id = "selList">
+		SELECT
+			bno, bmno mno, title, body, bdate, click
+		FROM
+			board, member
+		WHERE
+			bmno = mno
+			AND isshow = 'Y'
+	</sql>
+	
+	<select id="selDetail" resultType="bVO" parameterType="bVO">
+		SELECT
+			bno, title, body, bmno mno, id,bino, oriname, savename, click, bdate, board.bdate, board
+		FROM
+			board, brdimage, member
+		WHERE
+			bno = #{bno}
+			AND bno = bi_bno(+)
+			AND bmno = mno
+	</select>
+	
+	<insert id="addList" parameterType="bVO">
+		<selectKey keyProperty="bno" resultType="int" order="BEFORE">
+			SELECT
+				NVL(MAX(bno) + 1, 1001)
+			FROM
+				board
+		</selectKey>
+		<!-- 메인 질의 명령 -->
+		INSERT INTO
+			board(bno, title, body, bmno)
+		VALUES(
+		#{bno}, #{title}, #{body},
+		(
+			SELECT
+				mno
+			from
+				member
+			WHERE
+				id= #{id}
+			)
+		)
+	</insert>
+	
+	<!-- 첨부파일 저장 질의 명령 -->
+	<insert id="addImg" parameterType="">
+		<selectKey keyProperty="bino" resultType="int " order="BEFORE">
+			SELECT 
+				NVL(MAX(bino) + 1, 1001)
+			FROM
+				brdimage
+		</selectKey>
+		INSERT INTO
+			
+			 brdimage(bino, bi_bno, oriname, savename, len) 
+		VALUES(
+			
+			 #{bino}, #{bno}, #{oriname}, #{savename}, #{len}
+		)
+	</insert>
+</mapper>
